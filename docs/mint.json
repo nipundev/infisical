@@ -27,14 +27,13 @@
     "thumbsRating": true
   },
   "api": {
-    "baseUrl": ["https://app.infisical.com", "http://localhost:8080"],
-    "auth": {
-      "method": "key",
-      "name": "X-API-KEY"
-    }
+    "baseUrl": ["https://app.infisical.com", "http://localhost:8080"]
   },
   "topbarLinks": [
-    { "name": "Log In", "url": "https://app.infisical.com/login" }
+    {
+      "name": "Log In",
+      "url": "https://app.infisical.com/login"
+    }
   ],
   "topbarCtaButton": {
     "name": "Start for Free",
@@ -121,6 +120,15 @@
         "documentation/platform/token",
         "documentation/platform/mfa",
         {
+          "group": "Secret Rotation",
+          "pages": [
+            "documentation/platform/secret-rotation/overview",
+            "documentation/platform/secret-rotation/sendgrid",
+            "documentation/platform/secret-rotation/postgres",
+            "documentation/platform/secret-rotation/mysql"
+          ]
+        },
+        {
           "group": "SSO",
           "pages": [
             "documentation/platform/sso/overview",
@@ -141,10 +149,10 @@
           "group": "Deployment options",
           "pages": [
             "self-hosting/overview",
+            "self-hosting/deployment-options/standalone-infisical",
             "self-hosting/deployment-options/kubernetes-helm",
             "self-hosting/deployment-options/aws-ec2",
             "self-hosting/deployment-options/docker-compose",
-            "self-hosting/deployment-options/standalone-infisical",
             "self-hosting/deployment-options/digital-ocean-marketplace"
           ]
         },
@@ -189,9 +197,7 @@
     },
     {
       "group": "Integrations",
-      "pages": [
-        "integrations/overview"
-      ]
+      "pages": ["integrations/overview"]
     },
     {
       "group": "Infrastructure Integrations",
@@ -206,7 +212,8 @@
           ]
         },
         "integrations/platforms/kubernetes",
-        "integrations/frameworks/terraform"
+        "integrations/frameworks/terraform",
+        "integrations/platforms/ansible"
       ]
     },
     {
@@ -221,9 +228,7 @@
         },
         {
           "group": "Digital Ocean",
-          "pages": [
-            "integrations/cloud/digital-ocean-app-platform"
-          ]
+          "pages": ["integrations/cloud/digital-ocean-app-platform"]
         },
         "integrations/cloud/heroku",
         "integrations/cloud/vercel",
@@ -234,22 +239,29 @@
         "integrations/cloud/laravel-forge",
         "integrations/cloud/supabase",
         "integrations/cloud/northflank",
+        "integrations/cloud/hasura-cloud",
         "integrations/cloud/terraform-cloud",
-        "integrations/cloud/teamcity",
         "integrations/cloud/cloudflare-pages",
-        "integrations/cloud/checkly",
         "integrations/cloud/qovery",
         "integrations/cloud/hashicorp-vault",
         "integrations/cloud/azure-key-vault",
         "integrations/cloud/gcp-secret-manager",
         "integrations/cloud/cloud-66",
-        "integrations/cloud/windmill",
+        "integrations/cloud/windmill"
+      ]
+    },
+    {
+      "group": "CI/CD Integrations",
+      "pages": [
+        "integrations/cloud/teamcity",
+        "integrations/cloud/checkly",
         "integrations/cicd/githubactions",
         "integrations/cicd/gitlab",
         "integrations/cicd/circleci",
         "integrations/cicd/travisci",
         "integrations/cicd/bitbucket",
-        "integrations/cicd/codefresh"
+        "integrations/cicd/codefresh",
+        "integrations/cicd/jenkins"
       ]
     },
     {
@@ -277,9 +289,7 @@
     },
     {
       "group": "Build Tool Integrations",
-      "pages": [
-        "integrations/build-tools/gradle"
-      ]
+      "pages": ["integrations/build-tools/gradle"]
     },
     {
       "group": "Overview",
@@ -327,7 +337,6 @@
             "api-reference/endpoints/workspaces/update-membership",
             "api-reference/endpoints/workspaces/delete-membership",
             "api-reference/endpoints/workspaces/workspace-key",
-            "api-reference/endpoints/workspaces/logs",
             "api-reference/endpoints/workspaces/secret-snapshots",
             "api-reference/endpoints/workspaces/rollback-snapshot"
           ]
@@ -335,7 +344,6 @@
         {
           "group": "Environments",
           "pages": [
-            "api-reference/endpoints/environments/list",
             "api-reference/endpoints/environments/create",
             "api-reference/endpoints/environments/update",
             "api-reference/endpoints/environments/delete"
@@ -357,9 +365,7 @@
             "api-reference/endpoints/secrets/create",
             "api-reference/endpoints/secrets/read",
             "api-reference/endpoints/secrets/update",
-            "api-reference/endpoints/secrets/delete",
-            "api-reference/endpoints/secrets/versions",
-            "api-reference/endpoints/secrets/rollback-version"
+            "api-reference/endpoints/secrets/delete"
           ]
         },
         {

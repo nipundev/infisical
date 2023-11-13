@@ -1,4 +1,4 @@
-import mongoose, { Types } from "mongoose";
+import { Types } from "mongoose";
 import {
   APIKeyData, 
   BackupPrivateKey,
@@ -10,10 +10,6 @@ import {
   User,
   UserAction
 } from "../models";
-import {
-  Action,
-  Log
-} from "../ee/models";
 import { sendMail } from "./nodemailer";
 import {
   InternalServerError,
@@ -224,101 +220,82 @@ const checkDeleteUserConditions = async ({
 export const deleteUser = async ({
   userId
 }: {
-  userId: Types.ObjectId
+  userId: Types.ObjectId;
 }) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
-  try {
-    const user = await User.findByIdAndDelete(userId);
-    
-    if (!user) throw ResourceNotFoundError();
-
-    await checkDeleteUserConditions({
-      userId: user._id
-    });
-    
-    await UserAction.deleteMany({
-      user: user._id
-    });
-
-    await BackupPrivateKey.deleteMany({
-      user: user._id
-    });
-
-    await APIKeyData.deleteMany({
-      user: user._id
-    });
-
-    await Action.deleteMany({
-      user: user._id
-    }); 
-    
-    await Log.deleteMany({
-      user: user._id
-    });
-
-    await TokenVersion.deleteMany({
-      user: user._id
-    });
-
-    await Key.deleteMany({
-      receiver: user._id
-    });
-
-    const membershipOrgs = await MembershipOrg.find({
-      user: userId
-    });
+  const user = await User.findByIdAndDelete(userId);
   
-    // delete organizations where user is only member
-    for await (const membershipOrg of membershipOrgs) {
-      const memberCount = await MembershipOrg.countDocuments({
-        organization: membershipOrg.organization
+  if (!user) throw ResourceNotFoundError();
+
+  await checkDeleteUserConditions({
+    userId: user._id
+  });
+  
+  await UserAction.deleteMany({
+    user: user._id
+  });
+
+  await BackupPrivateKey.deleteMany({
+    user: user._id
+  });
+
+  await APIKeyData.deleteMany({
+    user: user._id
+  });
+
+  await TokenVersion.deleteMany({
+    user: user._id
+  });
+
+  await Key.deleteMany({
+    receiver: user._id
+  });
+
+  const membershipOrgs = await MembershipOrg.find({
+    user: userId
+  });
+
+  // delete organizations where user is only member
+  for await (const membershipOrg of membershipOrgs) {
+    const memberCount = await MembershipOrg.countDocuments({
+      organization: membershipOrg.organization
+    });
+    
+    if (memberCount === 1) {
+      // organization only has 1 member (the current user)
+
+      await deleteOrganization({
+        organizationId: membershipOrg.organization
       });
-      
-      if (memberCount === 1) {
-        // organization only has 1 member (the current user)
-
-        await deleteOrganization({
-          organizationId: membershipOrg.organization
-        });
-      }
     }
-
-    const memberships = await Membership.find({
-      user: userId
-    });
-  
-    // delete workspaces where user is only member
-    for await (const membership of memberships) {
-      const memberCount = await Membership.countDocuments({
-        workspace: membership.workspace
-      });
-      
-      if (memberCount === 1) {
-        // workspace only has 1 member (the current user) -> delete workspace
-  
-        await deleteWorkspace({
-          workspaceId: membership.workspace
-        });
-      }
-    }
-    
-    await MembershipOrg.deleteMany({
-      user: userId
-    });
-    
-    await Membership.deleteMany({
-      user: userId
-    });
-
-    return user;
-  } catch (err) {
-    await session.abortTransaction();
-    throw InternalServerError({
-      message: "Failed to delete account"
-    })
-  } finally {
-    session.endSession();
   }
+
+  const memberships = await Membership.find({
+    user: userId
+  });
+
+  // delete workspaces where user is only member
+  for await (const membership of memberships) {
+    const memberCount = await Membership.countDocuments({
+      workspace: membership.workspace
+    });
+    
+    if (memberCount === 1) {
+      // workspace only has 1 member (the current user) -> delete workspace
+
+      await deleteWorkspace({
+        workspaceId: membership.workspace
+      });
+    }
+  }
+  
+  await MembershipOrg.deleteMany({
+    user: userId
+  });
+  
+  await Membership.deleteMany({
+    user: userId
+  });
+
+  return user;
 }

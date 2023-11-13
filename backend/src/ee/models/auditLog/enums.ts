@@ -1,7 +1,8 @@
 export enum ActorType {
-    USER = "user",
-    SERVICE = "service",
-    SERVICE_V3 = "service-v3"
+  USER = "user",
+  SERVICE = "service",
+  SERVICE_V3 = "service-v3",
+  Machine = "machine"
 }
 
 export enum UserAgentType {
@@ -38,6 +39,7 @@ export enum EventType {
   UPDATE_ENVIRONMENT = "update-environment",
   DELETE_ENVIRONMENT = "delete-environment",
   ADD_WORKSPACE_MEMBER = "add-workspace-member",
+  ADD_BATCH_WORKSPACE_MEMBER = "add-workspace-members",
   REMOVE_WORKSPACE_MEMBER = "remove-workspace-member",
   CREATE_FOLDER = "create-folder",
   UPDATE_FOLDER = "update-folder",

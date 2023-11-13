@@ -10,6 +10,7 @@ import {
   ALGORITHM_AES_256_GCM,
   ENCODING_SCHEME_UTF8,
   INTEGRATION_BITBUCKET_API_URL,
+  INTEGRATION_CHECKLY_API_URL,
   INTEGRATION_GCP_SECRET_MANAGER,
   INTEGRATION_NORTHFLANK_API_URL,
   INTEGRATION_QOVERY_API_URL,
@@ -28,7 +29,6 @@ import {
 } from "../../ee/services/ProjectRoleService";
 import { ForbiddenError } from "@casl/ability";
 import { getIntegrationAuthAccessHelper } from "../../helpers";
-import { ObjectId } from "mongodb";
 
 /***
  * Return integration authorization with id [integrationAuthId]
@@ -222,7 +222,7 @@ export const getIntegrationAuthApps = async (req: Request, res: Response) => {
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken, accessId } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -260,7 +260,7 @@ export const getIntegrationAuthTeams = async (req: Request, res: Response) => {
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -296,7 +296,7 @@ export const getIntegrationAuthVercelBranches = async (req: Request, res: Respon
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -346,6 +346,59 @@ export const getIntegrationAuthVercelBranches = async (req: Request, res: Respon
 };
 
 /**
+ * Return list of Checkly groups for a specific user
+ * @param req
+ * @param res
+ */
+export const getIntegrationAuthChecklyGroups = async (req: Request, res: Response) => {
+  const {
+    params: { integrationAuthId },
+    query: { accountId }
+  } = await validateRequest(reqValidator.GetIntegrationAuthChecklyGroupsV1, req);
+  
+  const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
+  });
+
+  const { permission } = await getUserProjectPermissions(
+    req.user._id,
+    integrationAuth.workspace.toString()
+  );
+  ForbiddenError.from(permission).throwUnlessCan(
+    ProjectPermissionActions.Read,
+    ProjectPermissionSub.Integrations
+  );
+
+  interface ChecklyGroup {
+    id: number;
+    name: string;
+  }
+  
+  if (accountId && accountId !== "") {
+    const { data }: { data: ChecklyGroup[] } = (
+      await standardRequest.get(`${INTEGRATION_CHECKLY_API_URL}/v1/check-groups`, {
+          headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: "application/json",
+              "X-Checkly-Account": accountId
+          }
+      })
+    );
+    
+    return res.status(200).send({
+      groups: data.map((g: ChecklyGroup) => ({
+        name: g.name,
+        groupId: g.id,
+      }))
+    });
+  }
+
+  return res.status(200).send({
+    groups: []
+  });
+}
+
+/**
  * Return list of Qovery Orgs for a specific user
  * @param req
  * @param res
@@ -357,7 +410,7 @@ export const getIntegrationAuthQoveryOrgs = async (req: Request, res: Response) 
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -409,7 +462,7 @@ export const getIntegrationAuthQoveryProjects = async (req: Request, res: Respon
   
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -470,7 +523,7 @@ export const getIntegrationAuthQoveryEnvironments = async (req: Request, res: Re
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -531,7 +584,7 @@ export const getIntegrationAuthQoveryApps = async (req: Request, res: Response) 
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -592,7 +645,7 @@ export const getIntegrationAuthQoveryContainers = async (req: Request, res: Resp
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -653,7 +706,7 @@ export const getIntegrationAuthQoveryJobs = async (req: Request, res: Response) 
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -715,7 +768,7 @@ export const getIntegrationAuthRailwayEnvironments = async (req: Request, res: R
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -808,7 +861,7 @@ export const getIntegrationAuthRailwayServices = async (req: Request, res: Respo
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -932,7 +985,7 @@ export const getIntegrationAuthBitBucketWorkspaces = async (req: Request, res: R
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -988,7 +1041,7 @@ export const getIntegrationAuthNorthflankSecretGroups = async (req: Request, res
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -1076,7 +1129,7 @@ export const getIntegrationAuthTeamCityBuildConfigs = async (req: Request, res: 
   
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(
@@ -1145,7 +1198,7 @@ export const deleteIntegrationAuth = async (req: Request, res: Response) => {
 
   // TODO(akhilmhdh): remove class -> static function path and makes these into reusable independent functions
   const { integrationAuth, accessToken } = await getIntegrationAuthAccessHelper({
-    integrationAuthId: new ObjectId(integrationAuthId)
+    integrationAuthId: new Types.ObjectId(integrationAuthId)
   });
 
   const { permission } = await getUserProjectPermissions(

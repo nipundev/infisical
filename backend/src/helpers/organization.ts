@@ -1,4 +1,4 @@
-import mongoose, { Types } from "mongoose";
+import { Types } from "mongoose";
 import { 
   Bot, 
   BotKey,
@@ -23,13 +23,11 @@ import {
   Workspace
 } from "../models";
 import {
-  Action,
   AuditLog,
   FolderVersion,
   GitAppInstallationSession,
   GitAppOrganizationInstallation,
   GitRisks,
-  Log,
   Role,
   SSOConfig,
   SecretApprovalPolicy,
@@ -55,7 +53,7 @@ import {
 import {
   createBotOrg
 } from "./botOrg";
-import { InternalServerError, ResourceNotFoundError } from "../utils/errors";
+import { ResourceNotFoundError } from "../utils/errors";
 
 /**
  * Create an organization with name [name]
@@ -115,214 +113,199 @@ export const deleteOrganization = async ({
 }: {
   organizationId: Types.ObjectId;
 }) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
-  try {
-    const organization = await Organization.findByIdAndDelete(organizationId);
+  const organization = await Organization.findByIdAndDelete(
+    organizationId
+  );
+
+  if (!organization) throw ResourceNotFoundError();
   
-    if (!organization) throw ResourceNotFoundError();
-    
-    await MembershipOrg.deleteMany({
-      organization: organization._id
-    });
-    
-    await BotOrg.deleteMany({
-      organization: organization._id
-    });
-    
-    await SSOConfig.deleteMany({
-      organization: organization._id
-    });
-    
-    await Role.deleteMany({
-      organization: organization._id
-    });
+  await MembershipOrg.deleteMany({
+    organization: organization._id
+  });
+  
+  await BotOrg.deleteMany({
+    organization: organization._id
+  });
+  
+  await SSOConfig.deleteMany({
+    organization: organization._id
+  });
+  
+  await Role.deleteMany({
+    organization: organization._id
+  });
 
-    await IncidentContactOrg.deleteMany({
-      organization: organization._id
-    });
-    
-    await GitRisks.deleteMany({
-      organization: organization._id
-    });
-    
-    await GitAppInstallationSession.deleteMany({
-      organization: organization._id
-    });
-    
-    await GitAppOrganizationInstallation.deleteMany({
-      organization: organization._id
-    });
+  await IncidentContactOrg.deleteMany({
+    organization: organization._id
+  });
+  
+  await GitRisks.deleteMany({
+    organization: organization._id
+  });
+  
+  await GitAppInstallationSession.deleteMany({
+    organization: organization._id
+  });
+  
+  await GitAppOrganizationInstallation.deleteMany({
+    organization: organization._id
+  });
 
-    const workspaceIds = await Workspace.distinct("_id", {
-      organization: organization._id
-    });
-    
-    await Workspace.deleteMany({
-      organization: organization._id
-    });
-    
-    await Membership.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  const workspaceIds = await Workspace.distinct("_id", {
+    organization: organization._id
+  });
+  
+  await Workspace.deleteMany({
+    organization: organization._id
+  });
+  
+  await Membership.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await Key.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    await Bot.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    await BotKey.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await Key.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  await Bot.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  await BotKey.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await SecretBlindIndexData.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    await Secret.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    await SecretVersion.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await SecretBlindIndexData.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  await Secret.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  await SecretVersion.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await SecretSnapshot.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    
-    await SecretImport.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await SecretSnapshot.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  await SecretImport.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await Folder.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await Folder.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await FolderVersion.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await FolderVersion.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await Webhook.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await Webhook.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await TrustedIP.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    await Tag.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await TrustedIP.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  await Tag.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await IntegrationAuth.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await IntegrationAuth.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await Integration.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await Integration.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await ServiceToken.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await ServiceToken.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await ServiceTokenData.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await ServiceTokenData.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await ServiceTokenDataV3.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    await ServiceTokenDataV3Key.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await ServiceTokenDataV3.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  await ServiceTokenDataV3Key.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await AuditLog.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await AuditLog.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await Log.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
+  await SecretApprovalPolicy.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
 
-    await Action.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-
-    await SecretApprovalPolicy.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-
-    await SecretApprovalRequest.deleteMany({
-      workspace: {
-        $in: workspaceIds
-      }
-    });
-    
-    return organization;
-  } catch (err) {
-    await session.abortTransaction();
-    throw InternalServerError({
-      message: "Failed to delete organization"
-    });
-  } finally {
-    session.endSession();
+  await SecretApprovalRequest.deleteMany({
+    workspace: {
+      $in: workspaceIds
+    }
+  });
+  
+  if (organization.customerId) {
+    // delete from stripe here
+    await licenseServerKeyRequest.delete(
+      `${await getLicenseServerUrl()}/api/license-server/v1/customers/${organization.customerId}`
+    );
   }
+    
+  return organization;
 }
 
 /**

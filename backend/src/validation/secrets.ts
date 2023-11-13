@@ -228,7 +228,6 @@ export const GetSecretsRawV3 = z.object({
     workspaceId: z.string().trim().optional(),
     environment: z.string().trim().optional(),
     secretPath: z.string().trim().default("/"),
-    folderId: z.string().trim().optional(),
     include_imports: z
       .enum(["true", "false"])
       .default("false")
@@ -302,7 +301,6 @@ export const GetSecretsV3 = z.object({
     workspaceId: z.string().trim(),
     environment: z.string().trim(),
     secretPath: z.string().trim().default("/"),
-    folderId: z.string().trim().optional(),
     include_imports: z
       .enum(["true", "false"])
       .default("false")
@@ -353,6 +351,7 @@ export const UpdateSecretByNameV3 = z.object({
   body: z.object({
     workspaceId: z.string().trim(),
     environment: z.string().trim(),
+    secretId: z.string().trim().optional(),
     type: z.enum([SECRET_SHARED, SECRET_PERSONAL]),
     secretPath: z.string().trim().default("/"),
     secretValueCiphertext: z.string().trim(),
@@ -379,7 +378,8 @@ export const DeleteSecretByNameV3 = z.object({
     workspaceId: z.string().trim(),
     environment: z.string().trim(),
     type: z.enum([SECRET_SHARED, SECRET_PERSONAL]),
-    secretPath: z.string().trim().default("/")
+    secretPath: z.string().trim().default("/"),
+    secretId: z.string().trim().optional()
   }),
   params: z.object({
     secretName: z.string()

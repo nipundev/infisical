@@ -31,6 +31,7 @@ import {
 } from "@app/components/v2";
 import { useOrganization, useWorkspace } from "@app/context";
 import {
+  useCreateFolder,
   useCreateSecretV3,
   useDeleteSecretV3,
   useGetFoldersByEnv,
@@ -40,6 +41,7 @@ import {
 } from "@app/hooks/api";
 
 import { FolderBreadCrumbs } from "./components/FolderBreadCrumbs";
+import { ProjectIndexSecretsSection } from "./components/ProjectIndexSecretsSection";
 import { SecretOverviewFolderRow } from "./components/SecretOverviewFolderRow";
 import { SecretOverviewTableRow } from "./components/SecretOverviewTableRow";
 
@@ -104,9 +106,25 @@ export const SecretOverviewPage = () => {
   const { mutateAsync: createSecretV3 } = useCreateSecretV3();
   const { mutateAsync: updateSecretV3 } = useUpdateSecretV3();
   const { mutateAsync: deleteSecretV3 } = useDeleteSecretV3();
+  const { mutateAsync: createFolder } = useCreateFolder();
 
   const handleSecretCreate = async (env: string, key: string, value: string) => {
     try {
+      // create folder if not existing
+      if (secretPath !== "/") {
+        // /hello/world -> [hello","world"]
+        const pathSegment = secretPath.split("/").filter(Boolean);
+        const parentPath = `/${pathSegment.slice(0, -1).join("/")}`;
+        const folderName = pathSegment.at(-1);
+        if (folderName && parentPath) {
+          await createFolder({
+            workspaceId,
+            environment: env,
+            directory: parentPath,
+            folderName
+          });
+        }
+      }
       await createSecretV3({
         environment: env,
         workspaceId,
@@ -130,12 +148,13 @@ export const SecretOverviewPage = () => {
     }
   };
 
-  const handleSecretUpdate = async (env: string, key: string, value: string) => {
+  const handleSecretUpdate = async (env: string, key: string, value: string, secretId?: string) => {
     try {
       await updateSecretV3({
         environment: env,
         workspaceId,
         secretPath,
+        secretId,
         secretName: key,
         secretValue: value,
         type: "shared",
@@ -154,13 +173,14 @@ export const SecretOverviewPage = () => {
     }
   };
 
-  const handleSecretDelete = async (env: string, key: string) => {
+  const handleSecretDelete = async (env: string, key: string, secretId?: string) => {
     try {
       await deleteSecretV3({
         environment: env,
         workspaceId,
         secretPath,
         secretName: key,
+        secretId,
         type: "shared"
       });
       createNotification({
@@ -188,7 +208,20 @@ export const SecretOverviewPage = () => {
     });
   };
 
-  const handleExploreEnvClick = (slug: string) => {
+  const handleExploreEnvClick = async (slug: string) => {
+    if (secretPath !== "/") {
+      const path = secretPath.split("/");
+      const directory = path.slice(0, -1).join("/");
+      const folderName = path.at(-1);
+      if (folderName && directory) {
+        await createFolder({
+          workspaceId,
+          environment: slug,
+          directory,
+          folderName
+        });
+      }
+    }
     const query: Record<string, string> = { ...router.query, env: slug };
     const envIndex = userAvailableEnvs.findIndex((el) => slug === el.slug);
     if (envIndex !== -1) {
@@ -212,7 +245,6 @@ export const SecretOverviewPage = () => {
   );
 
   const canViewOverviewPage = Boolean(userAvailableEnvs.length);
-
   const filteredSecretNames = secKeys
     ?.filter((name) => name.toUpperCase().includes(searchFilter.toUpperCase()))
     .sort((a, b) => (sortDir === "asc" ? a.localeCompare(b) : b.localeCompare(a)));
@@ -228,6 +260,7 @@ export const SecretOverviewPage = () => {
 
   return (
     <div className="container mx-auto px-6 text-mineshaft-50 dark:[color-scheme:dark]">
+      <ProjectIndexSecretsSection decryptFileKey={latestFileKey!} />
       <div className="relative right-5 ml-4">
         <NavHeader pageName={t("dashboard.title")} isProjectRelated />
       </div>
@@ -335,7 +368,14 @@ export const SecretOverviewPage = () => {
                           query: { id: workspaceId, env: userAvailableEnvs?.[0]?.slug }
                         }}
                       >
-                        <Button className="mt-4" variant="outline_bg" colorSchema="primary" size="md">Go to {userAvailableEnvs?.[0]?.name}</Button>
+                        <Button
+                          className="mt-4"
+                          variant="outline_bg"
+                          colorSchema="primary"
+                          size="md"
+                        >
+                          Go to {userAvailableEnvs?.[0]?.name}
+                        </Button>
                       </Link>
                     </EmptyState>
                   </Td>

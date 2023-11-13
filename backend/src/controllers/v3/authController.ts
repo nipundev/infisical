@@ -8,11 +8,9 @@ import { createToken, issueAuthTokens, validateProviderAuthToken } from "../../h
 import { checkUserDevice } from "../../helpers/user";
 import { sendMail } from "../../helpers/nodemailer";
 import { TokenService } from "../../services";
-import { EELogService } from "../../ee/services";
 import { BadRequestError, InternalServerError } from "../../utils/errors";
-import { ACTION_LOGIN, TOKEN_EMAIL_MFA } from "../../variables";
-import { getUserAgentType } from "../../utils/posthog"; // TODO: move this
-import { getHttpsEnabled, getJwtMfaLifetime, getJwtMfaSecret } from "../../config";
+import { AuthTokenType, TOKEN_EMAIL_MFA } from "../../variables";
+import { getAuthSecret, getHttpsEnabled, getJwtMfaLifetime } from "../../config";
 import { AuthMethod } from "../../models/user";
 import { validateRequest } from "../../helpers/validation";
 import * as reqValidator from "../../validation/auth";
@@ -134,10 +132,11 @@ export const login2 = async (req: Request, res: Response) => {
           // generate temporary MFA token
           const token = createToken({
             payload: {
+              authTokenType: AuthTokenType.MFA_TOKEN,
               userId: user._id.toString()
             },
             expiresIn: await getJwtMfaLifetime(),
-            secret: await getJwtMfaSecret()
+            secret: await getAuthSecret()
           });
 
           const code = await TokenService.createToken({
@@ -213,19 +212,6 @@ export const login2 = async (req: Request, res: Response) => {
           response.protectedKeyIV = user.protectedKeyIV;
           response.protectedKeyTag = user.protectedKeyTag;
         }
-
-        const loginAction = await EELogService.createAction({
-          name: ACTION_LOGIN,
-          userId: user._id
-        });
-
-        loginAction &&
-          (await EELogService.createLog({
-            userId: user._id,
-            actions: [loginAction],
-            channel: getUserAgentType(req.headers["user-agent"]),
-            ipAddress: req.realIP
-          }));
 
         return res.status(200).send(response);
       }

@@ -1,4 +1,5 @@
 export * from "./Accordion";
+export * from "./Alert";
 export * from "./Button";
 export * from "./Card";
 export * from "./Checkbox";
@@ -21,6 +22,7 @@ export * from "./SecretInput";
 export * from "./Select";
 export * from "./Skeleton";
 export * from "./Spinner";
+export * from "./Stepper";
 export * from "./Switch";
 export * from "./Table";
 export * from "./Tabs";
