@@ -119,6 +119,8 @@
         "documentation/platform/audit-logs",
         "documentation/platform/token",
         "documentation/platform/mfa",
+        "documentation/platform/pr-workflows",
+        "documentation/platform/role-based-access-controls",
         {
           "group": "Secret Rotation",
           "pages": [
@@ -196,6 +198,12 @@
       ]
     },
     {
+      "group": "Agent",
+      "pages": [
+        "infisical-agent/overview"
+      ]
+    },
+    {
       "group": "Integrations",
       "pages": ["integrations/overview"]
     },
@@ -242,6 +250,7 @@
         "integrations/cloud/hasura-cloud",
         "integrations/cloud/terraform-cloud",
         "integrations/cloud/cloudflare-pages",
+        "integrations/cloud/cloudflare-workers",
         "integrations/cloud/qovery",
         "integrations/cloud/hashicorp-vault",
         "integrations/cloud/azure-key-vault",
@@ -380,6 +389,10 @@
         {
           "group": "Service Tokens",
           "pages": ["api-reference/endpoints/service-tokens/get"]
+        },
+        {
+          "group": "Audit Logs",
+          "pages": ["api-reference/endpoints/audit-logs/export-audit-log"]
         }
       ]
     },

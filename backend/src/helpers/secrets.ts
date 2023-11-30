@@ -13,13 +13,11 @@ import {
   Folder,
   ISecret,
   IServiceTokenData,
-  IServiceTokenDataV3,
   Secret,
   SecretBlindIndexData,
   ServiceTokenData,
   TFolderRootSchema
 } from "../models";
-import { Permission } from "../models/serviceTokenDataV3";
 import { EventType, SecretVersion } from "../ee/models";
 import {
   BadRequestError,
@@ -50,42 +48,6 @@ import { getFolderByPath, getFolderIdFromServiceToken } from "../services/Folder
 import picomatch from "picomatch";
 import path from "path";
 import { getAnImportedSecret } from "../services/SecretImportService";
-
-/**
- * Validate scope for service token v3
- * @param authPayload
- * @param environment
- * @param secretPath
- * @returns
- */
-export const isValidScopeV3 = ({
-  authPayload,
-  environment,
-  secretPath,
-  requiredPermissions
-}: {
-  authPayload: IServiceTokenDataV3;
-  environment: string;
-  secretPath: string;
-  requiredPermissions: Permission[];
-}) => {
-  const { scopes } = authPayload;
-
-  const validScope = scopes.find(
-    (scope) =>
-      picomatch.isMatch(secretPath, scope.secretPath, { strictSlashes: false }) &&
-      scope.environment === environment
-  );
-
-  if (
-    validScope &&
-    !requiredPermissions.every((permission) => validScope.permissions.includes(permission))
-  ) {
-    return false;
-  }
-
-  return Boolean(validScope);
-};
 
 /**
  * Validate scope for service token v2
@@ -612,18 +574,20 @@ export const getSecretsHelper = async ({
     const approximateForNoneCapturedEvents = secrets.length * 10;
 
     if (shouldCapture) {
-      postHogClient.capture({
-        event: "secrets pulled",
-        distinctId: await TelemetryService.getDistinctId({ authData }),
-        properties: {
-          numberOfSecrets: shouldRecordK8Event ? approximateForNoneCapturedEvents : secrets.length,
-          environment,
-          workspaceId,
-          folderId,
-          channel: authData.userAgentType,
-          userAgent: authData.userAgent
-        }
-      });
+      if (workspaceId.toString() != "650e71fbae3e6c8572f436d4") {
+        postHogClient.capture({
+          event: "secrets pulled",
+          distinctId: await TelemetryService.getDistinctId({ authData }),
+          properties: {
+            numberOfSecrets: shouldRecordK8Event ? approximateForNoneCapturedEvents : secrets.length,
+            environment,
+            workspaceId,
+            folderId,
+            channel: authData.userAgentType,
+            userAgent: authData.userAgent
+          }
+        });
+      }
     }
   }
 
@@ -755,6 +719,8 @@ export const updateSecretHelper = async ({
   secretValueIV,
   secretValueTag,
   secretPath,
+  secretReminderRepeatDays,
+  secretReminderNote,
   tags,
   secretCommentCiphertext,
   secretCommentIV,
@@ -819,6 +785,10 @@ export const updateSecretHelper = async ({
         secretCommentIV,
         secretCommentTag,
         secretCommentCiphertext,
+
+        secretReminderRepeatDays,
+        secretReminderNote,
+
         skipMultilineEncoding,
         secretBlindIndex: newSecretNameBlindIndex,
         secretKeyIV,

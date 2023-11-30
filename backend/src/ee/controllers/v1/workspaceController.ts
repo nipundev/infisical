@@ -27,7 +27,6 @@ import {
 } from "../../models";
 import { EESecretService } from "../../services";
 import { getLatestSecretVersionIds } from "../../helpers/secretVersion";
-// import Folder, { TFolderSchema } from "../../../models/folder";
 import { getFolderByPath, searchByFolderId } from "../../../services/FolderService";
 import { EEAuditLogService, EELicenseService } from "../../services";
 import { extractIPDetails, isValidIpOrCidr } from "../../../utils/ip";
@@ -46,7 +45,7 @@ import {
 import {
   ProjectPermissionActions,
   ProjectPermissionSub,
-  getUserProjectPermissions
+  getAuthDataProjectPermissions
 } from "../../services/ProjectRoleService";
 import { ForbiddenError } from "@casl/ability";
 import { BadRequestError } from "../../../utils/errors";
@@ -107,7 +106,11 @@ export const getWorkspaceSecretSnapshots = async (req: Request, res: Response) =
     query: { environment, directory, offset, limit }
   } = await validateRequest(GetWorkspaceSecretSnapshotsV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Read,
     ProjectPermissionSub.SecretRollback
@@ -148,7 +151,11 @@ export const getWorkspaceSecretSnapshotsCount = async (req: Request, res: Respon
     query: { environment, directory }
   } = await validateRequest(GetWorkspaceSecretSnapshotsCountV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Read,
     ProjectPermissionSub.SecretRollback
@@ -238,7 +245,11 @@ export const rollbackWorkspaceSecretSnapshot = async (req: Request, res: Respons
     body: { directory, environment, version }
   } = await validateRequest(RollbackWorkspaceSecretSnapshotV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Create,
     ProjectPermissionSub.SecretRollback
@@ -567,17 +578,97 @@ export const rollbackWorkspaceSecretSnapshot = async (req: Request, res: Respons
  * @param res
  */
 export const getWorkspaceAuditLogs = async (req: Request, res: Response) => {
+  /* 
+    #swagger.summary = 'Return audit logs'
+    #swagger.description = 'Return audit logs'
+    
+    #swagger.security = [{
+      "apiKeyAuth": []
+    }]
+
+    #swagger.parameters['workspaceId'] = {
+      "description": "ID of the workspace where to get folders from",
+      "required": true,
+      "type": "string",
+      "in": "path"
+    }
+
+    #swagger.parameters['offset'] = {
+      "description": "Number of logs to skip before starting to return logs for pagination",
+      "required": false,
+      "type": "string"
+    }
+
+    #swagger.parameters['limit'] = {
+      "description": "Maximum number of logs to return for pagination",
+      "required": false,
+      "type": "string"
+    }
+
+   #swagger.parameters['startDate'] = {
+      "description": "Filter logs from this date in ISO-8601 format",
+      "required": false,
+      "type": "string"
+    }
+
+   #swagger.parameters['endDate'] = {
+      "description": "Filter logs till this date in ISO-8601 format",
+      "required": false,
+      "type": "string"
+    }
+
+    #swagger.parameters['eventType'] = {
+      "description": "Filter by type of event such as get-secrets, get-secret, create-secret, update-secret, delete-secret, etc.",
+      "required": false,
+      "type": "string",
+    }
+
+    #swagger.parameters['userAgentType'] = {
+      "description": "Filter by type of user agent such as web, cli, k8-operator, or other",
+      "required": false,
+      "type": "string",
+    }
+
+    #swagger.parameters['actor'] = {
+      "description": "Filter by actor such as user or service",
+      "required": false,
+      "type": "string"
+    }
+
+    #swagger.responses[200] = {
+        content: {
+            "application/json": {
+                schema: { 
+                  "type": "object",
+                  "properties": {
+                        "auditLogs": {
+                            "type": "array",
+                            "items": {
+			      $ref: "#/components/schemas/AuditLog",
+                            },
+                            "description": "List of audit log"                        
+                          },
+                  }
+                }
+            }           
+        }
+    }   
+    */
   const {
     query: { limit, offset, endDate, eventType, startDate, userAgentType, actor },
     params: { workspaceId }
   } = await validateRequest(GetWorkspaceAuditLogsV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Read,
     ProjectPermissionSub.AuditLogs
   );
-  
+
   const query = {
     workspace: new Types.ObjectId(workspaceId),
     ...(eventType
@@ -611,14 +702,9 @@ export const getWorkspaceAuditLogs = async (req: Request, res: Response) => {
         }
       : {})
   };
-
   const auditLogs = await AuditLog.find(query).sort({ createdAt: -1 }).skip(offset).limit(limit);
-
-  const totalCount = await AuditLog.countDocuments(query);
-
   return res.status(200).send({
-    auditLogs,
-    totalCount
+    auditLogs
   });
 };
 
@@ -632,7 +718,11 @@ export const getWorkspaceAuditLogActorFilterOpts = async (req: Request, res: Res
     params: { workspaceId }
   } = await validateRequest(GetWorkspaceAuditLogActorFilterOptsV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Read,
     ProjectPermissionSub.AuditLogs
@@ -666,7 +756,7 @@ export const getWorkspaceAuditLogActorFilterOpts = async (req: Request, res: Res
       name: serviceTokenData.name
     }
   }));
-  
+
   const serviceV3Actors: ServiceActorV3[] = (
     await ServiceTokenDataV3.find({
       workspace: new Types.ObjectId(workspaceId)
@@ -678,12 +768,8 @@ export const getWorkspaceAuditLogActorFilterOpts = async (req: Request, res: Res
       name: serviceTokenData.name
     }
   }));
-  
-  const actors = [
-    ...userActors, 
-    ...serviceActors,
-    ...serviceV3Actors
-  ];
+
+  const actors = [...userActors, ...serviceActors, ...serviceV3Actors];
 
   return res.status(200).send({
     actors
@@ -700,7 +786,11 @@ export const getWorkspaceTrustedIps = async (req: Request, res: Response) => {
     params: { workspaceId }
   } = await validateRequest(GetWorkspaceTrustedIpsV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Read,
     ProjectPermissionSub.IpAllowList
@@ -726,7 +816,11 @@ export const addWorkspaceTrustedIp = async (req: Request, res: Response) => {
     body: { comment, isActive, ipAddress: ip }
   } = await validateRequest(AddWorkspaceTrustedIpV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Create,
     ProjectPermissionSub.IpAllowList
@@ -792,7 +886,11 @@ export const updateWorkspaceTrustedIp = async (req: Request, res: Response) => {
     body: { ipAddress: ip, comment }
   } = await validateRequest(UpdateWorkspaceTrustedIpV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Edit,
     ProjectPermissionSub.IpAllowList
@@ -884,7 +982,11 @@ export const deleteWorkspaceTrustedIp = async (req: Request, res: Response) => {
     params: { workspaceId, trustedIpId }
   } = await validateRequest(DeleteWorkspaceTrustedIpV1, req);
 
-  const { permission } = await getUserProjectPermissions(req.user._id, workspaceId);
+  const { permission } = await getAuthDataProjectPermissions({
+    authData: req.authData,
+    workspaceId: new Types.ObjectId(workspaceId)
+  });
+
   ForbiddenError.from(permission).throwUnlessCan(
     ProjectPermissionActions.Delete,
     ProjectPermissionSub.IpAllowList
